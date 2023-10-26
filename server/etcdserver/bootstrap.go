@@ -51,6 +51,7 @@ import (
 	"go.etcd.io/raft/v3/raftpb"
 )
 
+// 基础配置初始化
 func bootstrap(cfg config.ServerConfig) (b *bootstrappedServer, err error) {
 	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
 		cfg.Logger.Warn(
@@ -69,7 +70,9 @@ func bootstrap(cfg config.ServerConfig) (b *bootstrappedServer, err error) {
 	if terr := fileutil.TouchDirAll(cfg.Logger, cfg.MemberDir()); terr != nil {
 		return nil, fmt.Errorf("cannot access member directory: %v", terr)
 	}
+	// 创建快照文件夹
 	ss := bootstrapSnapshot(cfg)
+	// http请求超时时间设置
 	prt, err := rafthttp.NewRoundTripper(cfg.PeerTLSInfo, cfg.PeerDialTimeout())
 	if err != nil {
 		return nil, err

@@ -426,11 +426,13 @@ func NewServer(cfg config.ServerConfig) (srv *EtcdServer, err error) {
 	// add all remotes into transport
 	for _, m := range b.cluster.remotes {
 		if m.ID != b.cluster.nodeID {
+			//集群节点
 			tr.AddRemote(m.ID, m.PeerURLs)
 		}
 	}
 	for _, m := range b.cluster.cl.Members() {
 		if m.ID != b.cluster.nodeID {
+			//集群节点元素peer
 			tr.AddPeer(m.ID, m.PeerURLs)
 		}
 	}

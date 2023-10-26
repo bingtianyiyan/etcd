@@ -15,21 +15,31 @@
 package concurrency_test
 
 import (
+	"os"
 	"testing"
 
 	"go.etcd.io/etcd/client/pkg/v3/testutil"
+	"go.etcd.io/etcd/tests/v3/integration"
 )
 
-func exampleEndpoints() []string { return nil }
+var lazyCluster = integration.NewLazyCluster()
 
-func forUnitTestsRunInMockedContext(mocking func(), _example func()) {
-	mocking()
-	// TODO: Call 'example' when mocking() provides realistic mocking of transport.
+func exampleEndpoints() []string { return lazyCluster.EndpointsGRPC() }
 
-	// The real testing logic of examples gets executed
-	// as part of ./tests/integration/clientv3/integration/...
+func forUnitTestsRunInMockedContext(_mocking func(), example func()) {
+	// For integration tests runs in the provided environment
+	example()
 }
 
+// TestMain sets up an etcd cluster if running the examples.
 func TestMain(m *testing.M) {
-	testutil.MustTestMainWithLeakDetection(m)
+	cleanup := testutil.BeforeIntegrationExamples(m)
+
+	v := m.Run()
+	lazyCluster.Terminate()
+	if v == 0 {
+		testutil.MustCheckLeakedGoroutine()
+	}
+	cleanup()
+	os.Exit(v)
 }

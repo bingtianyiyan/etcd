@@ -329,6 +329,7 @@ func (r *raftNode) start(rh *raftReadyHandler) {
 	}()
 }
 
+// 更新提交索引位置
 func updateCommittedIndex(ap *toApply, rh *raftReadyHandler) {
 	var ci uint64
 	if len(ap.entries) != 0 {
@@ -342,22 +343,21 @@ func updateCommittedIndex(ap *toApply, rh *raftReadyHandler) {
 	}
 }
 
+// 发送对应消息到不同管道
 func (r *raftNode) processMessages(ms []raftpb.Message) []raftpb.Message {
 	sentAppResp := false
 	for i := len(ms) - 1; i >= 0; i-- {
 		if r.isIDRemoved(ms[i].To) {
 			ms[i].To = 0
 		}
-
+		//edit
 		if ms[i].Type == raftpb.MsgAppResp {
 			if sentAppResp {
 				ms[i].To = 0
 			} else {
 				sentAppResp = true
 			}
-		}
-
-		if ms[i].Type == raftpb.MsgSnap {
+		} else if ms[i].Type == raftpb.MsgSnap {
 			// There are two separate data store: the store for v2, and the KV for v3.
 			// The msgSnap only contains the most recent snapshot of store without KV.
 			// So we need to redirect the msgSnap to etcd server main loop for merging in the
@@ -368,8 +368,7 @@ func (r *raftNode) processMessages(ms []raftpb.Message) []raftpb.Message {
 				// drop msgSnap if the inflight chan if full.
 			}
 			ms[i].To = 0
-		}
-		if ms[i].Type == raftpb.MsgHeartbeat {
+		} else if ms[i].Type == raftpb.MsgHeartbeat {
 			ok, exceed := r.td.Observe(ms[i].To)
 			if !ok {
 				// TODO: limit request rate.
